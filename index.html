@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Main page</title>
+    <style>
+        .matrix-list {
+            display: grid;
+            grid-template-areas: ". a1 a2" "b b1 b2" "c c1 c2";
+            grid-template-columns: auto 1fr 1fr;
+            grid-gap: 1px;
+            justify-self: center;
+        }
+
+        .matrix-item {
+            border: 1px solid #000;
+            padding: 5px;
+        }
+
+        .matrix-urgently {
+            grid-area: a1;
+        }
+
+        .matrix-not-urgently {
+            grid-area: a2;
+        }
+
+        .matrix-important {
+            grid-area: b;
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+        }
+
+        .matrix-urgently-important {
+            grid-area: b1;
+            background-color: #FDD7D8;
+        }
+
+        .matrix-not-urgently-important {
+            grid-area: b2;
+            background-color: #DAFED9;
+        }
+
+        .matrix-not-important {
+            grid-area: c;
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+        }
+
+        .matrix-urgently-not-important {
+            grid-area: c1;
+            background-color: #FEFEDA;
+        }
+
+        .matrix-not-urgently-not-important {
+            grid-area: c2;
+            background-color: #DCDBB9;
+        }
+
+    </style>
+</head>
+<body>
+<div id="root" class="matrix-list">
+    <div class="matrix-urgently matrix-item">Срочно</div>
+    <div class="matrix-not-urgently matrix-item">Не срочно</div>
+    <div class="matrix-important matrix-item">Важно</div>
+    <div class="matrix-urgently-important matrix-item"></div>
+    <div class="matrix-not-urgently-important matrix-item"></div>
+    <div class="matrix-not-important matrix-item">Не важно</div>
+    <div class="matrix-urgently-not-important matrix-item"></div>
+    <div class="matrix-not-urgently-not-important matrix-item"></div>
+</div>
+<div>
+    Events:
+    <input type="text" name="eventName">
+    <input type="date" name="eventDate">
+
+    <button id="addEvent">Add Event</button>
+</div>
+
+<div>
+    Macroses:
+    <input type="text" id="macrosName" name="macrosName">
+    <select name="macrosOperation" id="macrosOperations">
+        <option value="replace">
+            Replace
+        </option>
+    </select>
+
+    <button id="addMacros">Add Macros</button>
+</div>
+<script src="mongo.js"></script>
+<script src="utils.js"></script>
+<script>
+
+    const clearMatrix = () => {
+        document.querySelectorAll('.matrix-urgently-important')[0].innerHTML = '';
+        document.querySelectorAll('.matrix-not-urgently-important')[0].innerHTML = '';
+        document.querySelectorAll('.matrix-urgently-not-important')[0].innerHTML = '';
+        document.querySelectorAll('.matrix-not-urgently-not-important')[0].innerHTML = '';
+
+    };
+
+    const getPlaceInMatrix = (t) => {
+        let cls = '.matrix';
+
+        cls += t.urgently ? '-urgently' : '-not-urgently';
+        cls += t.important ? '-important' : '-not-important';
+
+        return document.querySelectorAll(cls)[0];
+    };
+
+    const refresh = () => {
+        dataLoader
+            .getEvents()
+            .then(events => {
+                console.info(events, 'SERGEY events');
+
+                clearMatrix();
+
+                if (events.length && events.length > 0) {
+                    events.forEach(e => {
+                        getPlaceInMatrix(e.type)
+                            .appendChild(createDOMElement({
+                                name: 'p',
+                                text: e.name + ' || ' + e.date
+                            }));
+                    });
+                }
+            });
+    };
+
+    let addEvent = document.getElementById('addEvent');
+
+    addEvent.addEventListener('click', () => {
+        let name = document.querySelectorAll('input[name="eventName"]')[0].value;
+        let date = document.querySelectorAll('input[name="eventDate"]')[0].value;
+        let type = {
+            important: false,
+            urgently: false
+        };
+
+
+        if (name.indexOf('ср') > -1) {
+            name = name.replace('ср', '');
+            type.urgently = true;
+        }
+
+        if (name.indexOf('важн') > -1) {
+            name = name.replace('важн', '');
+            type.important = true;
+        }
+
+
+        dataLoader
+            .addEvent({name, date, type})
+            .then(() => refresh());
+    });
+    refresh();
+
+</script>
+</body>
+</html>
